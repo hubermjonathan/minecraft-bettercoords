@@ -1,5 +1,8 @@
 package com.hubermjonathan.minecraft;
 
+import me.shedaniel.autoconfig.AutoConfig;
+import me.shedaniel.autoconfig.ConfigHolder;
+import me.shedaniel.autoconfig.serializer.Toml4jConfigSerializer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -12,28 +15,55 @@ import org.slf4j.LoggerFactory;
 
 public class BetterCoords implements ClientModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger("bettercoords");
+	private ConfigHolder<BetterCoordsConfig> configHolder;
 
 	@Override
 	public void onInitializeClient() {
 		LOGGER.info("<<<<< BetterCoords started >>>>>");
 
-		this.registerKeyBind();
+		this.configHolder = AutoConfig.register(BetterCoordsConfig.class, Toml4jConfigSerializer::new);
+
+		this.registerToggleMainOverlayKeyBind();
+		this.registerShareCoordinatesKeyBind();
+		this.registerToggleOresOverlayKeyBind();
 	}
 
-	private void registerKeyBind() {
-		KeyBinding toggleOverlayKey = new KeyBinding(
-				"key.bettercoords.toggle_overlay",
+	private void registerToggleMainOverlayKeyBind() {
+		KeyBinding toggleMainOverlayKey = new KeyBinding(
+				"Toggle Main Overlay",
 				InputUtil.Type.KEYSYM,
-				GLFW.GLFW_KEY_M,
-				"category.bettercoords.overlay"
+				GLFW.GLFW_KEY_N,
+				"BetterCoords"
 		);
 
-		KeyBinding toggleOverlayKeyBinding = KeyBindingHelper.registerKeyBinding(toggleOverlayKey);
+		KeyBinding toggleMainOverlayKeyBinding = KeyBindingHelper.registerKeyBinding(toggleMainOverlayKey);
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			if (client.player == null) return;
 
-			if (toggleOverlayKeyBinding.wasPressed()) {
+			if (toggleMainOverlayKeyBinding.wasPressed()) {
+				BetterCoordsConfig config = this.configHolder.getConfig();
+
+				config.overlayElements.toggleMainOverlay = !config.overlayElements.toggleMainOverlay;
+				AutoConfig.getConfigHolder(BetterCoordsConfig.class).save();
+			}
+		});
+	}
+
+	private void registerShareCoordinatesKeyBind() {
+		KeyBinding shareCoordinatesKey = new KeyBinding(
+				"Share Coordinates",
+				InputUtil.Type.KEYSYM,
+				GLFW.GLFW_KEY_M,
+				"BetterCoords"
+		);
+
+		KeyBinding shareCoordinatesKeyBinding = KeyBindingHelper.registerKeyBinding(shareCoordinatesKey);
+
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (client.player == null) return;
+
+			if (shareCoordinatesKeyBinding.wasPressed()) {
 				String coordinates = String.format(
 						"x: %.0f y: %.0f z: %.0f",
 						client.player.getX(),
@@ -42,6 +72,28 @@ public class BetterCoords implements ClientModInitializer {
 				);
 
 				client.player.sendChatMessage(coordinates, Text.of(coordinates));
+			}
+		});
+	}
+
+	private void registerToggleOresOverlayKeyBind() {
+		KeyBinding toggleOresOverlayKey = new KeyBinding(
+				"Toggle Ores Overlay",
+				InputUtil.Type.KEYSYM,
+				GLFW.GLFW_KEY_B,
+				"BetterCoords"
+		);
+
+		KeyBinding toggleOresOverlayKeyBinding = KeyBindingHelper.registerKeyBinding(toggleOresOverlayKey);
+
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (client.player == null) return;
+
+			if (toggleOresOverlayKeyBinding.wasPressed()) {
+				BetterCoordsConfig config = this.configHolder.getConfig();
+
+				config.overlayElements.toggleOresOverlay = !config.overlayElements.toggleOresOverlay;
+				AutoConfig.getConfigHolder(BetterCoordsConfig.class).save();
 			}
 		});
 	}
